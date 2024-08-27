@@ -1,7 +1,10 @@
 body {
     margin: 0;
     padding: 0;
-    background-color: black;
+    background: url("/game-background.jpg");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     overflow: hidden;
     font-family: Arial, sans-serif;
 }
@@ -11,7 +14,6 @@ body {
     width: 800px;
     height: 600px;
     margin: 0 auto;
-    background-color: #000;
     overflow: hidden;
 }
 
