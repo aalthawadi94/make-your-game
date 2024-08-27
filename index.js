@@ -3,9 +3,11 @@ const player = document.getElementById('player');
 const scoreBoard = document.getElementById('score-board');
 const pauseMenu = document.getElementById('pause-menu');
 const gameOverMenu = document.getElementById('game-over-menu');
+const victoryMenu = document.getElementById('victory-menu');
 const continueButton = document.getElementById('continue');
 const restartButton = document.getElementById('restart');
 const newGameButton = document.getElementById('new-game');
+const newGameVictoryButton = document.getElementById('new-game-victory');
 
 let gameState;
 
@@ -26,19 +28,23 @@ function resetGameState() {
         enemyShootInterval: 1000,
         lastEnemyShot: 0
     };
+    const logo = document.getElementById('logo');
+    const scoreBoard = document.getElementById('score-board');
     gameContainer.innerHTML = '';
+    gameContainer.appendChild(logo);
     gameContainer.appendChild(player);
     gameContainer.appendChild(scoreBoard);
-    document.getElementById('time').textContent = 0;
-    document.getElementById('score').textContent = 0;
-    document.getElementById('lives').textContent = 3;
+    
+    document.getElementById('time').textContent = '0';
+    document.getElementById('score').textContent = '0';
+    document.getElementById('lives').textContent = '3';
     createEnemies();
 }
 
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const PLAYER_SPEED = 5;
-const BULLET_SPEED = 7;
+const BULLET_SPEED = 5;
 const ENEMY_BULLET_SPEED = 5;
 const ENEMY_ROWS = 5;
 const ENEMY_COLS = 10;
@@ -46,152 +52,152 @@ const ENEMY_VERTICAL_SPACING = 40;
 const ENEMY_HORIZONTAL_SPACING = 60;
 
 function createEnemies() {
+    const fragment = document.createDocumentFragment();
     for (let row = 0; row < ENEMY_ROWS; row++) {
         for (let col = 0; col < ENEMY_COLS; col++) {
             const enemy = document.createElement('div');
             enemy.className = 'enemy game-object';
-            enemy.style.left = `${col * ENEMY_HORIZONTAL_SPACING + 50}px`;
-            enemy.style.top = `${row * ENEMY_VERTICAL_SPACING + 50}px`;
-            gameContainer.appendChild(enemy);
-            gameState.enemies.push({
-                element: enemy,
-                x: col * ENEMY_HORIZONTAL_SPACING + 50,
-                y: row * ENEMY_VERTICAL_SPACING + 50,
-            });
+            const x = col * ENEMY_HORIZONTAL_SPACING + 50;
+            const y = row * ENEMY_VERTICAL_SPACING + 50;
+            enemy.style.transform = `translate(${x}px, ${y}px)`;
+            fragment.appendChild(enemy);
+            gameState.enemies.push({ element: enemy, x, y });
         }
     }
+    gameContainer.appendChild(fragment);
 }
 
 function movePlayer(delta) {
     if (keys.ArrowLeft && gameState.player.x > 0) {
-        gameState.player.x -= PLAYER_SPEED * delta;
+        gameState.player.x = Math.max(0, gameState.player.x - PLAYER_SPEED * delta);
     }
     if (keys.ArrowRight && gameState.player.x < GAME_WIDTH - 40) {
-        gameState.player.x += PLAYER_SPEED * delta;
+        gameState.player.x = Math.min(GAME_WIDTH - 40, gameState.player.x + PLAYER_SPEED * delta);
     }
-    player.style.left = `${gameState.player.x}px`;
+    player.style.transform = `translateX(${gameState.player.x}px)`;
 }
 
 function moveBullets(delta) {
-    gameState.bullets.forEach((bullet, index) => {
+    const removeBullets = [];
+    gameState.bullets = gameState.bullets.filter(bullet => {
         bullet.y -= BULLET_SPEED * delta;
-        bullet.element.style.top = `${bullet.y}px`;
+        bullet.element.style.transform = `translate(${bullet.x}px, ${bullet.y}px)`;
         if (bullet.y < 0) {
-            gameContainer.removeChild(bullet.element);
-            gameState.bullets.splice(index, 1);
+            removeBullets.push(bullet.element);
+            return false;
         }
+        return true;
     });
 
-    gameState.enemyBullets.forEach((bullet, index) => {
+    gameState.enemyBullets = gameState.enemyBullets.filter(bullet => {
         bullet.y += ENEMY_BULLET_SPEED * delta;
-        bullet.element.style.top = `${bullet.y}px`;
+        bullet.element.style.transform = `translate(${bullet.x}px, ${bullet.y}px)`;
         if (bullet.y > GAME_HEIGHT) {
-            gameContainer.removeChild(bullet.element);
-            gameState.enemyBullets.splice(index, 1);
+            removeBullets.push(bullet.element);
+            return false;
         }
+        return true;
     });
+
+    removeBullets.forEach(element => gameContainer.removeChild(element));
 }
 
 function moveEnemies(delta) {
     let shouldChangeDirection = false;
-    gameState.enemies.forEach((enemy) => {
-        enemy.x += gameState.enemyDirection * gameState.enemySpeed * delta;
+    const enemySpeed = gameState.enemySpeed * delta;
+
+    gameState.enemies.forEach(enemy => {
+        enemy.x += gameState.enemyDirection * enemySpeed;
         if (enemy.x < 0 || enemy.x > GAME_WIDTH - 30) {
             shouldChangeDirection = true;
         }
-        enemy.element.style.left = `${enemy.x}px`;
     });
 
     if (shouldChangeDirection) {
         gameState.enemyDirection *= -1;
-        gameState.enemies.forEach((enemy) => {
+        gameState.enemies.forEach(enemy => {
             enemy.y += ENEMY_VERTICAL_SPACING / 2;
-            enemy.element.style.top = `${enemy.y}px`;
         });
         gameState.enemySpeed += 0.1;
     }
+
+    gameState.enemies.forEach(enemy => {
+        enemy.element.style.transform = `translate(${enemy.x}px, ${enemy.y}px)`;
+    });
 }
 
 function checkCollisions() {
-    gameState.bullets.forEach((bullet, bulletIndex) => {
-        gameState.enemies.forEach((enemy, enemyIndex) => {
+    const removeElements = [];
+
+    for (let i = gameState.bullets.length - 1; i >= 0; i--) {
+        const bullet = gameState.bullets[i];
+        for (let j = gameState.enemies.length - 1; j >= 0; j--) {
+            const enemy = gameState.enemies[j];
             if (
                 bullet.x < enemy.x + 30 &&
                 bullet.x + 5 > enemy.x &&
                 bullet.y < enemy.y + 30 &&
                 bullet.y + 15 > enemy.y
             ) {
-                gameContainer.removeChild(enemy.element);
-                gameContainer.removeChild(bullet.element);
-                gameState.enemies.splice(enemyIndex, 1);
-                gameState.bullets.splice(bulletIndex, 1);
+                removeElements.push(enemy.element, bullet.element);
+                gameState.enemies.splice(j, 1);
+                gameState.bullets.splice(i, 1);
                 gameState.score += 10;
-                updateScoreBoard();
-
-                if (gameState.enemies.length === 0) {
-                    victory();
-                }
+                break;
             }
-        });
-    });
+        }
+    }
 
-    gameState.enemyBullets.forEach((bullet, bulletIndex) => {
+    for (let i = gameState.enemyBullets.length - 1; i >= 0; i--) {
+        const bullet = gameState.enemyBullets[i];
         if (
             bullet.x < gameState.player.x + 40 &&
             bullet.x + 5 > gameState.player.x &&
             bullet.y < gameState.player.y + 20 &&
             bullet.y + 15 > gameState.player.y
         ) {
-            gameContainer.removeChild(bullet.element);
-            gameState.enemyBullets.splice(bulletIndex, 1);
+            removeElements.push(bullet.element);
+            gameState.enemyBullets.splice(i, 1);
             gameState.lives--;
-            updateScoreBoard();
-
             if (gameState.lives <= 0) {
                 gameOver();
             }
         }
-    });
+    }
 
-    gameState.enemies.forEach((enemy) => {
-        if (enemy.y + 30 > gameState.player.y) {
-            gameOver();
-        }
-    });
+    if (gameState.enemies.some(enemy => enemy.y + 70 > gameState.player.y)) {
+        gameOver();
+    }
+
+    removeElements.forEach(element => gameContainer.removeChild(element));
+    updateScoreBoard();
+
+    if (gameState.enemies.length === 0) {
+        victory();
+    }
 }
 
 function shoot() {
     const bullet = document.createElement('div');
     bullet.className = 'bullet game-object';
-    bullet.style.left = `${gameState.player.x + 17.5}px`;
-    bullet.style.top = `${gameState.player.y}px`;
+    const x = gameState.player.x + 17.5;
+    const y = gameState.player.y;
+    bullet.style.transform = `translate(${x}px, ${y}px)`;
     gameContainer.appendChild(bullet);
-
-    gameState.bullets.push({
-        element: bullet,
-        x: gameState.player.x + 17.5,
-        y: gameState.player.y,
-    });
+    gameState.bullets.push({ element: bullet, x, y });
 }
 
 function enemyShoot(currentTime) {
-    if (currentTime - gameState.lastEnemyShot > gameState.enemyShootInterval) {
-        const shootingEnemy =
-            gameState.enemies[Math.floor(Math.random() * gameState.enemies.length)];
-        if (shootingEnemy) {
-            const bullet = document.createElement('div');
-            bullet.className = 'enemy-bullet game-object';
-            bullet.style.left = `${shootingEnemy.x + 12.5}px`;
-            bullet.style.top = `${shootingEnemy.y + 30}px`;
-            gameContainer.appendChild(bullet);
-
-            gameState.enemyBullets.push({
-                element: bullet,
-                x: shootingEnemy.x + 12.5,
-                y: shootingEnemy.y + 30,
-            });
-            gameState.lastEnemyShot = currentTime;
-        }
+    if (currentTime - gameState.lastEnemyShot > gameState.enemyShootInterval && gameState.enemies.length > 0) {
+        const shootingEnemy = gameState.enemies[Math.floor(Math.random() * gameState.enemies.length)];
+        const bullet = document.createElement('div');
+        bullet.className = 'enemy-bullet game-object';
+        const x = shootingEnemy.x + 12.5;
+        const y = shootingEnemy.y + 30;
+        bullet.style.transform = `translate(${x}px, ${y}px)`;
+        gameContainer.appendChild(bullet);
+        gameState.enemyBullets.push({ element: bullet, x, y });
+        gameState.lastEnemyShot = currentTime;
     }
 }
 
@@ -210,19 +216,19 @@ function gameOver() {
 
 function victory() {
     gameState.isGameOver = true;
-    alert('You win! Final score: ' + gameState.score);
-    gameOver();
+    victoryMenu.style.display = 'block';
+    document.getElementById('victory-time').textContent = (gameState.time / 1000).toFixed(1);
+    document.getElementById('victory-score').textContent = gameState.score;
 }
 
+let lastRenderTime = 0;
 function gameLoop(currentTime) {
-    if (gameState.lastTime === 0) {
-        gameState.lastTime = currentTime;
-    }
+    if (gameState.isGameOver) return;
 
-    const delta = (currentTime - gameState.lastTime) / 16.67; // 60 FPS = 16.67ms per frame
-    gameState.lastTime = currentTime;
+    const delta = (currentTime - lastRenderTime) / 16.67; // 60 FPS = 16.67ms per frame
+    lastRenderTime = currentTime;
 
-    if (!gameState.isPaused && !gameState.isGameOver) {
+    if (!gameState.isPaused) {
         gameState.time += 16.67; // Increment time
 
         movePlayer(delta);
@@ -240,16 +246,13 @@ const keys = {};
 
 document.addEventListener('keydown', (event) => {
     keys[event.key] = true;
-    if (event.key === ' ') {
+    if (event.key === ' ' && !gameState.isPaused && !gameState.isGameOver) {
         shoot();
+        event.preventDefault();
     }
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && !gameState.isGameOver) {
         gameState.isPaused = !gameState.isPaused;
-        if (gameState.isPaused) {
-            pauseMenu.style.display = 'block';
-        } else {
-            pauseMenu.style.display = 'none';
-        }
+        pauseMenu.style.display = gameState.isPaused ? 'block' : 'none';
     }
 });
 
@@ -263,14 +266,15 @@ continueButton.addEventListener('click', () => {
 });
 
 restartButton.addEventListener('click', () => {
-    resetGameState();
-    pauseMenu.style.display = 'none';
+    location.reload();
 });
 
 newGameButton.addEventListener('click', () => {
-    resetGameState();
-    gameOverMenu.style.display = 'none';
-    requestAnimationFrame(gameLoop);
+    location.reload();
+});
+
+newGameVictoryButton.addEventListener('click', () => {
+    location.reload();
 });
 
 resetGameState();

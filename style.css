@@ -13,27 +13,36 @@ body {
     margin: 0 auto;
     background-color: #000;
     overflow: hidden;
+    /* background-image: linear-gradient(to top, rgba(255, 0, 0, 0.5) 0%, rgba(255, 0, 0, 0) 20%); */
 }
+
 
 .game-object {
     position: absolute;
-    background-color: white;
+    background-color: transparent;
 }
 
 #player {
     width: 40px;
-    height: 20px;
+    height: 40px;
     bottom: 20px;
+    background-image: url('player.png');
+    background-size: contain;
+    background-repeat: no-repeat;
 }
 
 .enemy {
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
+    background-image: url('enemyy.png');
+    background-size: contain;
+    background-repeat: no-repeat;
 }
 
 .bullet {
     width: 5px;
     height: 15px;
+    background-color: white;
 }
 
 .enemy-bullet {
@@ -50,7 +59,8 @@ body {
 }
 
 #pause-menu,
-#game-over-menu {
+#game-over-menu,
+#victory-menu {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -60,10 +70,66 @@ body {
     padding: 20px;
     text-align: center;
     display: none;
+    border-radius: 10px;
 }
 
 #pause-menu button,
-#game-over-menu button {
+#game-over-menu button,
+#victory-menu button {
     margin: 10px;
-    padding: 5px 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+#pause-menu button:hover,
+#game-over-menu button:hover,
+#victory-menu button:hover {
+    background-color: #45a049;
+}
+
+#victory-menu {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    display: none;
+    border-radius: 10px;
+}
+
+#victory-menu button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+#victory-menu button:hover {
+    background-color: #45a049;
+}
+
+#logo {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 150px;
+    height: 75px;
+    background-image: url('/space-invaders-logo.png'); /* Use an absolute path */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 1000;
+    color: white; /* For text color */
 }
