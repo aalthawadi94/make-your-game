@@ -1,13 +1,31 @@
+const startMenu = document.getElementById('start-menu');
+const howToPlayMenu = document.getElementById('how-to-play-menu');
 const gameContainer = document.getElementById('game-container');
 const player = document.getElementById('player');
 const scoreBoard = document.getElementById('score-board');
 const pauseMenu = document.getElementById('pause-menu');
 const gameOverMenu = document.getElementById('game-over-menu');
+const victoryMenu = document.getElementById('victory-menu');
+
+const startGameButton = document.getElementById('start-game');
+const howToPlayButton = document.getElementById('how-to-play');
+const closeHowToPlayButton = document.getElementById('close-how-to-play');
 const continueButton = document.getElementById('continue');
 const restartButton = document.getElementById('restart');
 const newGameButton = document.getElementById('new-game');
+const playAgainButton = document.getElementById('play-again');
 
 let gameState;
+
+const GAME_WIDTH = 800;
+const GAME_HEIGHT = 600;
+const PLAYER_SPEED = 5;
+const BULLET_SPEED = 5;
+const ENEMY_BULLET_SPEED = 5;
+const ENEMY_ROWS = 5;
+const ENEMY_COLS = 10;
+const ENEMY_VERTICAL_SPACING = 40;
+const ENEMY_HORIZONTAL_SPACING = 60;
 
 function resetGameState() {
     gameState = {
@@ -24,26 +42,30 @@ function resetGameState() {
         enemyDirection: 1,
         enemySpeed: 1,
         enemyShootInterval: 1000,
-        lastEnemyShot: 0
+        lastEnemyShot: 0,
+        lastPlayerShot: 0,
+        playerShootCooldown: 250
     };
-    gameContainer.innerHTML = '';
+
+    // Clear the game container
+    while (gameContainer.firstChild) {
+        gameContainer.removeChild(gameContainer.firstChild);
+    }
+
+    // Reset player position
+    player.style.left = `${gameState.player.x}px`;
+    player.style.top = `${gameState.player.y}px`;
     gameContainer.appendChild(player);
+
+    // Reset scoreboard
     gameContainer.appendChild(scoreBoard);
-    document.getElementById('time').textContent = 0;
-    document.getElementById('score').textContent = 0;
-    document.getElementById('lives').textContent = 3;
+    document.getElementById('time').textContent = '0.0';
+    document.getElementById('score').textContent = '0';
+    document.getElementById('lives').textContent = '3';
+
+    // Recreate enemies
     createEnemies();
 }
-
-const GAME_WIDTH = 800;
-const GAME_HEIGHT = 600;
-const PLAYER_SPEED = 5;
-const BULLET_SPEED = 5;
-const ENEMY_BULLET_SPEED = 5;
-const ENEMY_ROWS = 5;
-const ENEMY_COLS = 10;
-const ENEMY_VERTICAL_SPACING = 40;
-const ENEMY_HORIZONTAL_SPACING = 60;
 
 function createEnemies() {
     for (let row = 0; row < ENEMY_ROWS; row++) {
@@ -80,6 +102,11 @@ function gameLoop(currentTime) {
             checkCollisions();
             enemyShoot(currentTime);
             updateScoreBoard();
+
+            // Check if space key is pressed and call shoot with current time
+            if (keys[' ']) {
+                shoot(currentTime);
+            }
         } catch (error) {
             console.error("Game encountered an error:", error);
             gameState.isPaused = true;
@@ -106,12 +133,10 @@ function moveBullets(delta) {
     gameState.bullets = gameState.bullets.filter(bullet => {
         bullet.y -= BULLET_SPEED * delta;
 
-        // Check if the bullet is off-screen
         if (bullet.y > 0) {
             bullet.element.style.top = `${bullet.y}px`;
             return true;
         } else {
-            // Bullet is off-screen, remove from DOM if still present
             if (bullet.element.parentNode) {
                 gameContainer.removeChild(bullet.element);
             }
@@ -122,12 +147,10 @@ function moveBullets(delta) {
     gameState.enemyBullets = gameState.enemyBullets.filter(bullet => {
         bullet.y += ENEMY_BULLET_SPEED * delta;
 
-        // Check if the bullet is off-screen
         if (bullet.y < GAME_HEIGHT) {
             bullet.element.style.top = `${bullet.y}px`;
             return true;
         } else {
-            // Bullet is off-screen, remove from DOM if still present
             if (bullet.element.parentNode) {
                 gameContainer.removeChild(bullet.element);
             }
@@ -135,7 +158,6 @@ function moveBullets(delta) {
         }
     });
 }
-
 
 function moveEnemies(delta) {
     let shouldChangeDirection = false;
@@ -161,7 +183,6 @@ function moveEnemies(delta) {
 }
 
 function checkCollisions() {
-    // Iterate over bullets in reverse to safely remove elements while iterating
     for (let i = gameState.bullets.length - 1; i >= 0; i--) {
         let bullet = gameState.bullets[i];
 
@@ -174,19 +195,16 @@ function checkCollisions() {
                 bullet.y < enemy.y + 30 &&
                 bullet.y + 15 > enemy.y
             ) {
-                // Remove enemy from DOM and gameState
                 if (enemy.element.parentNode) {
                     gameContainer.removeChild(enemy.element);
                 }
                 gameState.enemies.splice(j, 1);
 
-                // Remove bullet from DOM and gameState
                 if (bullet.element.parentNode) {
                     gameContainer.removeChild(bullet.element);
                 }
                 gameState.bullets.splice(i, 1);
 
-                // Update score and check for victory
                 gameState.score += 10;
                 updateScoreBoard();
 
@@ -194,7 +212,6 @@ function checkCollisions() {
                     victory();
                 }
 
-                // Stop checking further collisions for this bullet
                 break;
             }
         }
@@ -227,19 +244,22 @@ function checkCollisions() {
     });
 }
 
+function shoot(currentTime) {
+    if (currentTime - gameState.lastPlayerShot > gameState.playerShootCooldown) {
+        const bullet = document.createElement('div');
+        bullet.className = 'bullet game-object';
+        bullet.style.left = `${gameState.player.x + 17.5}px`;
+        bullet.style.top = `${gameState.player.y}px`;
+        gameContainer.appendChild(bullet);
 
-function shoot() {
-    const bullet = document.createElement('div');
-    bullet.className = 'bullet game-object';
-    bullet.style.left = `${gameState.player.x + 17.5}px`;
-    bullet.style.top = `${gameState.player.y}px`;
-    gameContainer.appendChild(bullet);
+        gameState.bullets.push({
+            element: bullet,
+            x: gameState.player.x + 17.5,
+            y: gameState.player.y,
+        });
 
-    gameState.bullets.push({
-        element: bullet,
-        x: gameState.player.x + 17.5,
-        y: gameState.player.y,
-    });
+        gameState.lastPlayerShot = currentTime;
+    }
 }
 
 function enemyShoot(currentTime) {
@@ -278,17 +298,45 @@ function gameOver() {
 
 function victory() {
     gameState.isGameOver = true;
-    alert('You win! Final score: ' + gameState.score);
-    gameOver();
+    victoryMenu.style.display = 'block';
+    document.getElementById('victory-time').textContent = (gameState.time / 1000).toFixed(1);
+    document.getElementById('victory-score').textContent = gameState.score;
+}
+
+function showStartMenu() {
+    startMenu.style.display = 'block';
+    howToPlayMenu.style.display = 'none';
+    gameContainer.style.display = 'none';
+    pauseMenu.style.display = 'none';
+    gameOverMenu.style.display = 'none';
+    victoryMenu.style.display = 'none';
+}
+
+function startGame() {
+    startMenu.style.display = 'none';
+    gameContainer.style.display = 'block';
+    resetGameState();
+    requestAnimationFrame(gameLoop);
+}
+
+function showHowToPlay() {
+    howToPlayMenu.style.display = 'block';
+    startMenu.style.display = 'none';
+}
+
+function closeHowToPlay() {
+    howToPlayMenu.style.display = 'none';
+    startMenu.style.display = 'block';
+}
+
+function restartGame() {
+    location.reload();
 }
 
 const keys = {};
 
 document.addEventListener('keydown', (event) => {
     keys[event.key] = true;
-    if (event.key === ' ') {
-        shoot();
-    }
     if (event.key === 'Escape') {
         gameState.isPaused = !gameState.isPaused;
         if (gameState.isPaused) {
@@ -303,19 +351,19 @@ document.addEventListener('keyup', (event) => {
     keys[event.key] = false;
 });
 
+// Event listeners for buttons
+startGameButton.addEventListener('click', startGame);
+howToPlayButton.addEventListener('click', showHowToPlay);
+closeHowToPlayButton.addEventListener('click', closeHowToPlay);
+
 continueButton.addEventListener('click', () => {
     gameState.isPaused = false;
     pauseMenu.style.display = 'none';
 });
 
-restartButton.addEventListener('click', () => {
-    location.reload();
-});
+restartButton.addEventListener('click', restartGame);
+newGameButton.addEventListener('click', showStartMenu);
+playAgainButton.addEventListener('click', showStartMenu);
 
-newGameButton.addEventListener('click', () => {
-    location.reload();
-});
-
-requestAnimationFrame(gameLoop);
-resetGameState();
-
+// Initial setup
+showStartMenu();

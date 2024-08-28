@@ -9,22 +9,48 @@
 </head>
 
 <body>
-    <div id="game-container">
+    <div id="start-menu">
+        <h1>Space Invaders</h1>
+        <button id="start-game">Start Game</button>
+        <button id="how-to-play">How to Play</button>
+    </div>
+
+    <div id="how-to-play-menu">
+        <h2>How to Play</h2>
+        <ul>
+            <li>Use Left and Right arrow keys to move</li>
+            <li>Press Space to shoot</li>
+            <li>Press Esc to pause the game</li>
+            <li>Destroy all enemies to win!</li>
+        </ul>
+        <button id="close-how-to-play">Close</button>
+    </div>
+
+    <div id="game-container" style="display: none;">
         <div id="player" class="game-object"></div>
         <div id="score-board">
             Time: <span id="time">0</span> | Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
         </div>
     </div>
+
     <div id="pause-menu">
         <h2>Game Paused</h2>
         <button id="continue">Continue</button>
         <button id="restart">Restart</button>
     </div>
+
     <div id="game-over-menu">
         <h2>Game Over</h2>
         <p>Time: <span id="final-time"></span></p>
         <p>Score: <span id="final-score"></span></p>
         <button id="new-game">New Game</button>
+    </div>
+
+    <div id="victory-menu">
+        <h2>Victory!</h2>
+        <p>Time: <span id="victory-time"></span></p>
+        <p>Score: <span id="victory-score"></span></p>
+        <button id="play-again">Play Again</button>
     </div>
     <script src="index.js"></script>
 </body>
