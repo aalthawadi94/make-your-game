@@ -3,9 +3,39 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>Space Invaders</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        html,
+        body {
+            touch-action: manipulation;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        // Prevent pinch zooming
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+
+        // Prevent zooming on mobile devices
+        document.addEventListener('touchmove', function (event) {
+            if (event.scale !== 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        var lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            var now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
 </head>
 
 <body>
@@ -52,6 +82,7 @@
         <p>Score: <span id="victory-score"></span></p>
         <button id="play-again">Play Again</button>
     </div>
+
     <script src="index.js"></script>
 </body>
 

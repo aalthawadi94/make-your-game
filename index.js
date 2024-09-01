@@ -23,9 +23,15 @@ const PLAYER_SPEED = 5;
 const BULLET_SPEED = 5;
 const ENEMY_BULLET_SPEED = 5;
 const ENEMY_ROWS = 5;
-const ENEMY_COLS = 10;
-const ENEMY_VERTICAL_SPACING = 40;
-const ENEMY_HORIZONTAL_SPACING = 60;
+const ENEMY_COLS = 8;
+const ENEMY_VERTICAL_SPACING = 50;
+const ENEMY_HORIZONTAL_SPACING = 80;
+
+document.addEventListener('wheel', function (e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+    }
+}, { passive: false });
 
 function resetGameState() {
     gameState = {
@@ -41,7 +47,7 @@ function resetGameState() {
         lastTime: 0,
         enemyDirection: 1,
         enemySpeed: 1,
-        enemyShootInterval: 1000,
+        enemyShootInterval: 800,
         lastEnemyShot: 0,
         lastPlayerShot: 0,
         playerShootCooldown: 250
